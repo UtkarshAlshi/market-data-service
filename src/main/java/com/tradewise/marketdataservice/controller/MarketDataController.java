@@ -3,6 +3,9 @@ package com.tradewise.marketdataservice.controller;
 import com.tradewise.marketdataservice.service.MarketDataService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.ta4j.core.BarSeries; // <-- ADD
+import org.springframework.web.bind.annotation.RequestParam; // <-- ADD
+import java.time.LocalDate; // <-- ADD
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -33,5 +36,18 @@ public class MarketDataController {
         } else {
             return ResponseEntity.notFound().build();
         }
+    }
+    
+    // --- ADD THIS NEW ENDPOINT ---
+    @GetMapping("/history/internal")
+    public ResponseEntity<BarSeries> getHistoricalData(
+            @RequestParam String symbol,
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            @RequestHeader("X-User-Email") String userEmail) {
+        
+        // We don't use the email, but it confirms auth
+        BarSeries series = marketDataService.getHistoricalData(symbol, startDate, endDate);
+        return ResponseEntity.ok(series);
     }
 }
