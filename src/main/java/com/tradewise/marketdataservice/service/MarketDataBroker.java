@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -35,17 +34,14 @@ public class MarketDataBroker {
             "AAPL", "MSFT", "GOOGL", "AMZN", "IBM", "BINANCE:BTCUSDT", "BINANCE:ETHUSDT"
     );
 
-    private final SimpMessagingTemplate messagingTemplate;
     private final ObjectMapper objectMapper;
-    private final KafkaTemplate<String, StockPriceUpdate> kafkaTemplate; // <-- ADD
+    private final KafkaTemplate<String, StockPriceUpdate> kafkaTemplate;
     private WebSocketClient webSocketClient;
 
-    public MarketDataBroker(SimpMessagingTemplate messagingTemplate,
-                            ObjectMapper objectMapper,
-                            KafkaTemplate<String, StockPriceUpdate> kafkaTemplate) { // <-- ADD
-        this.messagingTemplate = messagingTemplate;
+    public MarketDataBroker(ObjectMapper objectMapper,
+                            KafkaTemplate<String, StockPriceUpdate> kafkaTemplate) {
         this.objectMapper = objectMapper;
-        this.kafkaTemplate = kafkaTemplate; // <-- ADD
+        this.kafkaTemplate = kafkaTemplate;
     }
 
     @PostConstruct
@@ -105,12 +101,8 @@ public class MarketDataBroker {
     private void broadcastPrice(String symbol, BigDecimal price) {
         StockPriceUpdate update = new StockPriceUpdate(symbol, price);
 
-        String topic = "/topic/prices/" + symbol;
-
-        logger.debug("Broadcasting update: " + topic + " - Price: " + price);
-        messagingTemplate.convertAndSend(topic, update);
-
-        // 2. Send to Kafka for other services
+        logger.info("Publishing price update to Kafka: {} at Price: ${}", symbol, price);
         kafkaTemplate.send("price-updates", symbol, update);
+        logger.debug("Kafka send completed for: {}", symbol);
     }
 }
